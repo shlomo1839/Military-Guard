@@ -1,19 +1,30 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles, Role } from '../auth/roles.decorator';
+import { ShiftsService } from './shifts.service';
+import { CreateShiftDto } from './dto/create-shift.dto';
 
 @Controller('shifts')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class ShiftsController {
-    // this line protected by JWT - requires a valid token to access
-    @UseGuards(AuthGuard('jwt'))
+    constructor(private readonly shiftsService: ShiftsService) {}
+
     @Get()
     getAllShifts() {
-        return [
-            {id: 1, name: 'Morning Guard', time: '08:00 - 12:00'}, 
-            {id: 2, name: 'Night Guard', time: '20:00 - 00:00'}
-        ];
+        return this.shiftsService.findAll();
     }
 
-    createShift() {
-        return { message: 'Shift created succssefully'}
+    // only commander can create shifts
+    @Roles(Role.Commander)
+    @Post()
+    createShift(@Body() createShiftDto: CreateShiftDto) {
+        return this.shiftsService.create(createShiftDto);
+    }
+
+    @Roles(Role.Commander)
+    @Delete(':id')
+    deleteShift(@Param('id', ParseIntPipe) id: number) {   // ParseIntPipe - vlidate the id and convert the if=d from text to number
+        return this.shiftsService.remove(id);
     }
 }
