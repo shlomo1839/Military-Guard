@@ -1,27 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAssignmentDto } from './dto/create-assignment.dto';
-
+import { InjectModel } from '@nestjs/sequelize';
+import { Assignment } from './assignments.model'
+import { CreateAssignmentDto } from './dto/create-assignments.tdo'
 
 @Injectable()
 export class AssignmentsService {
-  private assignments: any[] = [];
-  private idCounter = 1;
+  constructor(
+    @InjectModel(Assignment)
+    private assignmentModel: typeof Assignment,
+  ) {}
 
-  // שcommander sees all, Soldier sees only their own
-  findAll(user: any) {
+  async findAll(user: any) {
     if (user.role === 'commander') {
-      return this.assignments;
+      // Commander sees all assignments
+      return this.assignmentModel.findAll();
     }
-    return this.assignments.filter(a => a.userId === user.userId);
+    // soldier sees only their own
+    return this.assignmentModel.findAll({ where: { userId: user.userId } });
   }
 
-  create(createAssignmentDto: CreateAssignmentDto) {
-    const newAssignment = {
-      id: this.idCounter++,
+  async create(createAssignmentDto: CreateAssignmentDto) {
+    return this.assignmentModel.create({
       ...createAssignmentDto,
       status: 'assigned',
-    };
-    this.assignments.push(newAssignment);
-    return newAssignment;
+    });
   }
 }

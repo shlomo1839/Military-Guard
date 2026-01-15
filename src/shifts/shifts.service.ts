@@ -14,11 +14,11 @@ export class ShiftsService {
     private shiftModel: typeof Shift,
   ) {}
 
-   async findAll() {
+  async findAll() {
     return this.shiftModel.findAll();
   }
 
-  create(createShiftDto: CreateShiftDto) {
+  async create(createShiftDto: CreateShiftDto) {
     return this.shiftModel.create({...CreateShiftDto});
   }
 
