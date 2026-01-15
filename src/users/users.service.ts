@@ -1,43 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { User } from './user.model';
 import * as bcrypt from 'bcrypt';
 
-export type User = any;
+export type UserType = User;
 
 @Injectable()
-export class UsersService {
-    // Mock data for Phase 1 only
-  private readonly users = [
-    // all users have the sam basic hash
-    {
-      userId: 1,
-      username: 'Ben',
-      password: 'this-text-will-be-replaces',
-      role: 'commander',
-    },
-    {
-      userId: 2,
-      username: 'Shlomo',
-      password: 'this-text-will-be-replaces',
-      role: 'soldier',
-    },
-  ];
+export class UsersService implements OnModuleInit {
+  constructor(
+    @InjectModel(User)                         // Injects the specific model repository to allow database
+    private userModel: typeof User,
+  ) {}
 
-  constructor() {
-    // func that remove fake password
-    this.hashMockPasswords();
+  // Adds sample data to the database for testing
+  async onModuleInit() {
+    const count = await this.userModel.count();
+    if (count === 0) {
+      // bulkCreate: sequelize commant to create many kines in one time.
+      const hash = await bcrypt.hash('password123', 10);
+      await this.userModel.bulkCreate([
+        { username: 'commander1', password: hash, role: 'commander' },
+        { username: 'soldier1', password: hash, role: 'soldier' },
+      ]);
+      console.log(' Database created with Initial Users ');
+    }
   }
 
-  private async hashMockPasswords() {
-    // here create hash created
-    const hash = await bcrypt.hash('password123', 10);
-    this.users.forEach(u => u.password = hash)
+  async findOne(username: string): Promise<User | null> {
+    return this.userModel.findOne({ where: { username } });
   }
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.users.find((user) => user.username === username)
+  async findById(id: number): Promise<User | null> {
+    return this.userModel.findByPk(id);
   }
-
-  async findById(id: number) : Promise<User | undefined> {
-    return this.users.find((user) => user.userId === id);
-  }
-};
+}

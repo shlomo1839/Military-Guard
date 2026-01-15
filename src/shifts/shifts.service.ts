@@ -1,28 +1,31 @@
-import { Injectable } from '@nestjs/common';
+
+
+
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Shift } from './shift.model';
 import { CreateShiftDto } from './dto/create-shift.dto';
+
 
 @Injectable()
 export class ShiftsService {
-  private shifts: { id: number; name: string; time: string }[] = [];
-  private idCounter = 1;
+  constructor(
+    @InjectModel(Shift)
+    private shiftModel: typeof Shift,
+  ) {}
 
-  findAll() {
-    return this.shifts;
+   async findAll() {
+    return this.shiftModel.findAll();
   }
 
   create(createShiftDto: CreateShiftDto) {
-    const newShift = {
-      id: this.idCounter++,
-      ...createShiftDto,
-    };
-    this.shifts.push(newShift);
-    return newShift;
+    return this.shiftModel.create({...CreateShiftDto});
   }
 
-  remove(id: number) {
-    const index = this.shifts.findIndex(s => s.id === id);
-    if (index === -1) throw new Error('Shift not found');
-    this.shifts.splice(index, 1);
-    return { message: 'Shift deleted' };
+  async remove(id: number) {
+    const shift = await this.shiftModel.findByPk(id);
+    if (!shift) throw new NotFoundException('Shift not found');
+    await shift.destroy();
+    return { message: 'this shift deleted' };
   }
 };
